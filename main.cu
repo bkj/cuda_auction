@@ -13,7 +13,7 @@
 // Define constants
 
 #ifndef NUM_NODES	
-#define NUM_NODES 8192 // Dimension of problem
+#define NUM_NODES 1024 // Dimension of problem
 #endif
 
 #ifndef BLOCKSIZE

@@ -10,8 +10,8 @@ from lapjv import lapjv as jv_src
 
 np.random.seed(123)
 
-N = 8192
-max_value = 400
+N = 1024
+max_value = 100
 x = np.random.choice(max_value, (N, N))
 
 t = time()
