@@ -13,18 +13,18 @@
 // Define constants
 
 #ifndef NUM_NODES	
-#define NUM_NODES 1024 // Dimension of problem
+#define NUM_NODES 8192 // Dimension of problem
 #endif
 
 #ifndef BLOCKSIZE
-#define BLOCKSIZE 256 // How best to set this?
+#define BLOCKSIZE 32 // How best to set this?
 #endif
 
 #ifndef AUCTION_EPS
-#define AUCTION_EPS 1.0 // Larger values mean solution is more approximate
+#define AUCTION_EPS 100 // Larger values mean solution is more approximate
 #endif
 
-void load_data(float *h_data, const int dim) {
+void load_data(int *h_data, const int dim) {
 	std::ifstream input_file("graph", std::ios_base::in);
 	
 	std::cerr << "load_data: start" << std::endl;
@@ -44,32 +44,32 @@ void load_data(float *h_data, const int dim) {
 int run_auction(){
 	
 	// Load data
-	float* h_data = (float *)malloc(sizeof(float) * NUM_NODES * NUM_NODES);
+	int* h_data = (int *)malloc(sizeof(int) * NUM_NODES * NUM_NODES);
 	load_data(h_data, NUM_NODES);
 	
 	// Output data structure
 	int* h_person2item = (int *)malloc(sizeof(int) * NUM_NODES);
 	
-	float* d_data;         //a [i,j] : desire of person i for object j
-	float* d_bids;         //bids value
-	int*   d_sbids;
-	float* d_prices;       //p[j] : each object j has a price:
-	int*   d_person2item;  //each person is or not assigned
-	int*   d_item2person;  //each object is or not assigned
+	int* d_data;         //a [i,j] : desire of person i for object j
+	int* d_bids;         //bids value
+	int* d_sbids;
+	int* d_prices;       //p[j] : each object j has a price:
+	int* d_person2item;  //each person is or not assigned
+	int* d_item2person;  //each object is or not assigned
 	
 	//using atomic operations, counts the number of assigns, 
 	//otherwise, used as a boolean that is set whenever there is an unassigned person
 	int* d_numAssign = 0;
 
-	cudaMalloc((void **)&d_data,        sizeof(float) * NUM_NODES * NUM_NODES);
-	cudaMalloc((void **)&d_bids,        sizeof(float) * NUM_NODES * NUM_NODES);
+	cudaMalloc((void **)&d_data,        sizeof(int)   * NUM_NODES * NUM_NODES);
+	cudaMalloc((void **)&d_bids,        sizeof(int)   * NUM_NODES * NUM_NODES);
 	cudaMalloc((void **)&d_sbids,       sizeof(int)   * NUM_NODES);
-	cudaMalloc((void **)&d_prices,      sizeof(float) * NUM_NODES);
+	cudaMalloc((void **)&d_prices,      sizeof(int)   * NUM_NODES);
 	cudaMalloc((void **)&d_person2item, sizeof(int  ) * NUM_NODES);
 	cudaMalloc((void **)&d_item2person, sizeof(int  ) * NUM_NODES);
 	cudaMalloc((void **)&d_numAssign,   sizeof(int  ) * 1) ;
 	
-	cudaMemcpy(d_data, h_data, sizeof(float) * NUM_NODES * NUM_NODES, cudaMemcpyHostToDevice);
+	cudaMemcpy(d_data, h_data, sizeof(int) * NUM_NODES * NUM_NODES, cudaMemcpyHostToDevice);
 
 	dim3 dimBlock(BLOCKSIZE, 1, 1);
 	int gx = ceil(NUM_NODES / (double) dimBlock.x);
@@ -79,9 +79,9 @@ int run_auction(){
 		
 		// Reset data structures
 		int h_numAssign = 0;
-		cudaMemset(d_bids,         0.0, NUM_NODES * NUM_NODES * sizeof(float));
-		cudaMemset(d_bids,         0.0, NUM_NODES * sizeof(int));
-		cudaMemset(d_prices,       0.0, NUM_NODES * sizeof(float));
+		cudaMemset(d_bids,           0, NUM_NODES * NUM_NODES * sizeof(int));
+		cudaMemset(d_sbids,          0, NUM_NODES * sizeof(int));
+		cudaMemset(d_prices,       0.0, NUM_NODES * sizeof(int));
 		cudaMemset(d_person2item,   -1, NUM_NODES * sizeof(int));
 		cudaMemset(d_item2person,   -1, NUM_NODES * sizeof(int));
 		cudaMemset(d_numAssign,      0, 1 * sizeof(int));
@@ -93,11 +93,11 @@ int run_auction(){
 		cudaEventCreate(&start);
 		cudaEventCreate(&stop);
 		cudaEventRecord(start, 0);
-		
-		// Run LAP solver
-		while(h_numAssign < NUM_NODES){
-	      
-			cudaMemset(d_bids, 0.0, NUM_NODES * NUM_NODES * sizeof(float));
+			
+		int stop_cond = NUM_NODES;
+		while(h_numAssign < stop_cond){
+				      
+			cudaMemset(d_bids,  0, NUM_NODES * NUM_NODES * sizeof(int));
 			cudaMemset(d_sbids, 0, NUM_NODES * sizeof(int));
 	    	cudaThreadSynchronize();
 						
@@ -123,14 +123,14 @@ int run_auction(){
 			
 			cudaMemcpy(&h_numAssign, d_numAssign, sizeof(int) * 1, cudaMemcpyDeviceToHost);
 		}
-		
 		// Stop timer
 		cudaEventRecord(stop, 0);
 		cudaEventSynchronize(stop);
 		cudaEventElapsedTime(&milliseconds, start, stop);
 		cudaEventDestroy(start);
 		cudaEventDestroy(stop);
-		std::cerr << "milliseconds=" << milliseconds << std::endl;
+		std::cerr << "h_numAssign=" << h_numAssign << " | milliseconds=" << milliseconds << std::endl;
+
  	}
  	
  	// Read out results
@@ -138,7 +138,7 @@ int run_auction(){
 	int score = 0;
  	for (int i = 0; i < NUM_NODES; i++) {
  		std::cout << i << " " << h_person2item[i] << std::endl;
- 		score += h_data[i * NUM_NODES + h_person2item[i]];
+ 		score += h_data[i + NUM_NODES * h_person2item[i]];
  	}
  	std::cerr << "score=" << score << std::endl;
 
