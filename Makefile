@@ -7,12 +7,12 @@ ARCH=\
   -gencode arch=compute_61,code=compute_61 \
   -gencode arch=compute_61,code=sm_61
 
-OPTIONS=-O2 -use_fast_math
+OPTIONS=-O3 -use_fast_math
 
 all: main
 	
-main: main.cu
-	nvcc $(ARCH) $(OPTIONS) -o $@ $<
+main: main.cu auction_kernel.cu
+	nvcc $(ARCH) $(OPTIONS) -o main main.cu
 
 clean:
 	rm -f main

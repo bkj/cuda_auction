@@ -7,69 +7,81 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+// #include "nodet_auction_kernel.cu" // Faster, but non deterministic
 #include "auction_kernel.cu"
 
 // --
 // Define constants
 
-#ifndef NUM_NODES    
-#define NUM_NODES 5180 // Dimension of problem
+#ifndef MAX_NODES    
+#define MAX_NODES 20000 // Dimension of problem
 #endif
 
 #ifndef BLOCKSIZE
 #define BLOCKSIZE 32 // How best to set this?
 #endif
 
-#ifndef AUCTION_EPS
-#define AUCTION_EPS 1 // Larger values mean solution is more approximate
+#ifndef AUCTION_MAX_EPS
+#define AUCTION_MAX_EPS 1.0 // Larger values mean solution is more approximate
 #endif
 
-void load_data(int *h_data, const int dim) {
+#ifndef AUCTION_MIN_EPS
+#define AUCTION_MIN_EPS 1.0 / 4.0
+#endif
+
+int load_data(float *raw_data) {
     std::ifstream input_file("graph", std::ios_base::in);
     
     std::cerr << "load_data: start" << std::endl;
     int i = 0;
-    int val;
+    float val;
     while(input_file >> val) {
-        h_data[i] = val;
+        raw_data[i] = val;
         i++;
-        if(i > NUM_NODES * NUM_NODES) {
+        if(i > MAX_NODES * MAX_NODES) {
             std::cerr << "load_data: ERROR -- data file too large" << std::endl;
-            return;
+            return -1;
         }
     }
     std::cerr << "load_data: finish" << std::endl;
+    return (int)sqrt(i);
 }
 
 int run_auction(){
     
     // Load data
-    int* h_data = (int *)malloc(sizeof(int) * NUM_NODES * NUM_NODES);
-    load_data(h_data, NUM_NODES);
+    float* raw_data = (float *)malloc(sizeof(float) * MAX_NODES * MAX_NODES);
+    int NUM_NODES = load_data(raw_data);
+    if(NUM_NODES <= 0) {
+        return 1;
+    }
+    float* h_data = (float *)realloc(raw_data, sizeof(float) * NUM_NODES * NUM_NODES);
     
-    // Output data structure
+    int h_numAssign;
     int* h_person2item = (int *)malloc(sizeof(int) * NUM_NODES);
     
-    int* d_data;         //a [i,j] : desire of person i for object j
-    int* d_bids;         //bids value
+    float* d_data;
+    float* d_bids;
+    float* d_prices;
+    int* d_bidders;
     int* d_sbids;
-    int* d_prices;       //p[j] : each object j has a price:
-    int* d_person2item;  //each person is or not assigned
-    int* d_item2person;  //each object is or not assigned
+    int* d_person2item;
+    int* d_item2person;
     
     //using atomic operations, counts the number of assigns, 
     //otherwise, used as a boolean that is set whenever there is an unassigned person
     int* d_numAssign = 0;
 
-    cudaMalloc((void **)&d_data,        sizeof(int)   * NUM_NODES * NUM_NODES);
-    cudaMalloc((void **)&d_bids,        sizeof(int)   * NUM_NODES * NUM_NODES);
-    cudaMalloc((void **)&d_sbids,       sizeof(int)   * NUM_NODES);
-    cudaMalloc((void **)&d_prices,      sizeof(int)   * NUM_NODES);
-    cudaMalloc((void **)&d_person2item, sizeof(int  ) * NUM_NODES);
-    cudaMalloc((void **)&d_item2person, sizeof(int  ) * NUM_NODES);
-    cudaMalloc((void **)&d_numAssign,   sizeof(int  ) * 1) ;
+    cudaMalloc((void **)&d_data,        NUM_NODES * NUM_NODES * sizeof(float));
+    cudaMalloc((void **)&d_bids,        NUM_NODES * NUM_NODES * sizeof(float));
+    cudaMalloc((void **)&d_prices,      NUM_NODES             * sizeof(float));
+    cudaMalloc((void **)&d_bidders,     NUM_NODES * NUM_NODES * sizeof(int));
+    cudaMalloc((void **)&d_sbids,       NUM_NODES * sizeof(int));
+    cudaMalloc((void **)&d_person2item, NUM_NODES * sizeof(int));
+    cudaMalloc((void **)&d_item2person, NUM_NODES * sizeof(int));
+    cudaMalloc((void **)&d_numAssign,           1 * sizeof(int)) ;
     
-    cudaMemcpy(d_data, h_data, sizeof(int) * NUM_NODES * NUM_NODES, cudaMemcpyHostToDevice);
+    cudaMemcpy(d_data, h_data, sizeof(float) * NUM_NODES * NUM_NODES, cudaMemcpyHostToDevice);
 
     dim3 dimBlock(BLOCKSIZE, 1, 1);
     int gx = ceil(NUM_NODES / (double) dimBlock.x);
@@ -77,65 +89,76 @@ int run_auction(){
     
     for(int run_num = 0; run_num < 4; run_num++) {
         
-        // Reset data structures
-        int h_numAssign = 0;
-        cudaMemset(d_bids,           0, NUM_NODES * NUM_NODES * sizeof(int));
-        cudaMemset(d_sbids,          0, NUM_NODES * sizeof(int));
-        cudaMemset(d_prices,       0.0, NUM_NODES * sizeof(int));
-        cudaMemset(d_person2item,   -1, NUM_NODES * sizeof(int));
-        cudaMemset(d_item2person,   -1, NUM_NODES * sizeof(int));
-        cudaMemset(d_numAssign,      0, 1 * sizeof(int));
-        cudaThreadSynchronize();
-
         // Start timer
         cudaEvent_t start, stop;
         float milliseconds = 0;
         cudaEventCreate(&start);
         cudaEventCreate(&stop);
         cudaEventRecord(start, 0);
-            
-        int stop_cond = NUM_NODES;
-        while(h_numAssign < stop_cond){
-                      
-            cudaMemset(d_bids,  0, NUM_NODES * NUM_NODES * sizeof(int));
-            cudaMemset(d_sbids, 0, NUM_NODES * sizeof(int));
-            cudaThreadSynchronize();
-                        
-            run_bidding<<<dimBlock, dimGrid>>>(
-                NUM_NODES,
-                d_data,
-                d_person2item,
-                d_bids,
-                d_sbids,
-                d_prices,
-                AUCTION_EPS
-            );
-            run_assignment<<<dimBlock, dimGrid>>>(
-                NUM_NODES,
-                d_person2item,
-                d_item2person,
-                d_bids,
-                d_sbids,
-                d_prices,
-                d_numAssign
-            );
+
+        // Reset data structures
+        cudaMemset(d_prices, 0.0, NUM_NODES * sizeof(float));
+        cudaThreadSynchronize();
+
+        float auction_eps = AUCTION_MAX_EPS;
+        while(auction_eps >= AUCTION_MIN_EPS) {
+            h_numAssign = 0;
+            cudaMemset(d_bidders,        0, NUM_NODES * NUM_NODES * sizeof(int));
+            cudaMemset(d_person2item,   -1, NUM_NODES             * sizeof(int));
+            cudaMemset(d_item2person,   -1, NUM_NODES             * sizeof(int));
+            cudaMemset(d_numAssign,      0, 1                     * sizeof(int));
             cudaThreadSynchronize();
             
-            cudaMemcpy(&h_numAssign, d_numAssign, sizeof(int) * 1, cudaMemcpyDeviceToHost);
+            while(h_numAssign < NUM_NODES){
+                          
+                cudaMemset(d_bids,  0, NUM_NODES * NUM_NODES * sizeof(float));
+                cudaMemset(d_sbids, 0, NUM_NODES             * sizeof(int));
+                cudaThreadSynchronize();
+                            
+                run_bidding<<<dimBlock, dimGrid>>>(
+                    NUM_NODES,
+                    d_data,
+                    d_person2item,
+                    d_bids,
+                    d_bidders,
+                    d_sbids,
+                    d_prices,
+                    auction_eps
+                );
+                run_assignment<<<dimBlock, dimGrid>>>(
+                    NUM_NODES,
+                    d_person2item,
+                    d_item2person,
+                    d_bids,
+                    d_bidders,
+                    d_sbids,
+                    d_prices,
+                    d_numAssign
+                );
+                cudaThreadSynchronize();
+                
+                cudaMemcpy(&h_numAssign, d_numAssign, sizeof(int) * 1, cudaMemcpyDeviceToHost);
+            }
+            auction_eps = auction_eps / 2.0;
         }
+        
         // Stop timer
         cudaEventRecord(stop, 0);
         cudaEventSynchronize(stop);
         cudaEventElapsedTime(&milliseconds, start, stop);
         cudaEventDestroy(start);
         cudaEventDestroy(stop);
-        std::cerr << "h_numAssign=" << h_numAssign << " | milliseconds=" << milliseconds << std::endl;
-
+        std::cerr << 
+            "run_num="         << run_num      << 
+            " | h_numAssign="  << h_numAssign  <<
+            " | milliseconds=" << milliseconds << std::endl;
+        
+        cudaThreadSynchronize();
      }
      
      // Read out results
     cudaMemcpy(h_person2item, d_person2item, sizeof(int) * NUM_NODES, cudaMemcpyDeviceToHost);
-    int score = 0;
+    float score = 0;
      for (int i = 0; i < NUM_NODES; i++) {
          std::cout << i << " " << h_person2item[i] << std::endl;
          score += h_data[i + NUM_NODES * h_person2item[i]];
