@@ -1,2 +1,5 @@
+bin/*
+lib/*
 main
 graph
+__pycache__

@@ -1,8 +1,5 @@
+# cuda_auction/Makefile
 
-# Generate SASS for the first version of each major architecture.
-#   This will cover that entire major architecture.
-# Generate SASS for important minor versions.
-# Generate PTX for the last named architecture for future support.
 ARCH=\
   -gencode arch=compute_61,code=compute_61 \
   -gencode arch=compute_61,code=sm_61
@@ -11,12 +8,13 @@ OPTIONS=-O3 -use_fast_math
 
 all: main shared
 	
-main: main.cu auction_kernel.cu
-	nvcc $(ARCH) $(OPTIONS) -o main main.cu
+main: src/auction.cu src/auction_kernel.cu
+	mkdir -p bin
+	nvcc $(ARCH) $(OPTIONS) -o bin/auction src/auction.cu -I src
 
-shared: main.cu auction_kernel.cu
-	nvcc $(ARCH) $(OPTIONS) -Xcompiler -fPIC -shared -o cuda_auction.so main.cu
+shared: src/auction.cu src/auction_kernel.cu
+	mkdir -p lib
+	nvcc $(ARCH) $(OPTIONS) -Xcompiler -fPIC -shared -o lib/cuda_auction.so src/auction.cu -I src
 	
 clean:
-	rm -f main
-	rm -f cuda_auction.so
+	rm -rf bin lib
