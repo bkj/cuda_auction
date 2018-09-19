@@ -9,10 +9,14 @@ ARCH=\
 
 OPTIONS=-O3 -use_fast_math
 
-all: main
+all: main shared
 	
 main: main.cu auction_kernel.cu
 	nvcc $(ARCH) $(OPTIONS) -o main main.cu
 
+shared: main.cu auction_kernel.cu
+	nvcc $(ARCH) $(OPTIONS) -Xcompiler -fPIC -shared -o cuda_auction.so main.cu
+	
 clean:
 	rm -f main
+	rm -f cuda_auction.so
