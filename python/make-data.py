@@ -6,7 +6,7 @@
 
 import numpy as np
 from time import time
-from lapjv import lapjv as jv_src
+from lap import lapjv
 
 np.random.seed(123)
 _ = np.random.choice(10, (10, 10)).astype('float32')
@@ -17,18 +17,13 @@ max_value = 100
 x = np.random.choice(max_value, (N, N))
 
 t = time()
-src_ass, trg_ass, _ =  jv_src((x.max() - x))
-trg_ass[:10]
+_, src_ass, _ =  lapjv((x.max() - x))
 milliseconds = int(1000 * (time() - t))
 print('milliseconds', milliseconds)
 
 print('score', x[(np.arange(x.shape[0]), src_ass)].sum())
 
-xx = x.copy()
-xx -= xx.min(axis=0, keepdims=True)
-xx -= xx.min(axis=1, keepdims=True)
-
 with open('graph', 'w') as f:
-    f.write('\n'.join(np.hstack(xx).astype('str')))
+    f.write('\n'.join(np.hstack(x).astype('str')))
 
 

@@ -19,7 +19,7 @@ def __get_fn():
 
 __fn = __get_fn()
 
-def lap_auction(X, verbose=False, num_runs=1, auction_max_eps=1.0, auction_min_eps=1.0, auction_factor=0.0):
+def dense_lap_auction(X, verbose=False, num_runs=1, auction_max_eps=1.0, auction_min_eps=1.0, auction_factor=0.0):
     
     X_flat       = np.hstack(X).astype('float32')
     num_nodes    = int(X.shape[0])

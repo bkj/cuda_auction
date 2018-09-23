@@ -1,8 +1,11 @@
 # cuda_auction/Makefile
 
+# ARCH=\
+#   -gencode arch=compute_61,code=compute_61 \
+#   -gencode arch=compute_61,code=sm_61
 ARCH=\
-  -gencode arch=compute_61,code=compute_61 \
-  -gencode arch=compute_61,code=sm_61
+  -gencode arch=compute_60,code=compute_60 \
+  -gencode arch=compute_60,code=sm_60
 
 OPTIONS=-O3 -use_fast_math
 
