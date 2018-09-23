@@ -21,3 +21,7 @@ python python/make-data.py
 cd python
 python test_auction.py
 ```
+
+### Note
+
+!! This branch is slower than master, if you're not using CSR format

@@ -89,6 +89,13 @@ def sparse_lap_auction(X, k, verbose=False, num_runs=1,
     columns = np.hstack(columns).astype('int32')
     
     assert len(set(columns)) == num_nodes
+    # !! If this fails, we can maybe pivot unrepresented columns
+    # into the solution.  If that fails, either increase k or 
+    # compute some of the entries on the fly. Or just leave some
+    # nodes unassigned, and assign them after.
+    #
+    # If using `topdot`, probably good to have equal elements 
+    # kept/dropped randomly
     
     sel = np.repeat(np.arange(X.shape[0]), k)
     X_flat = np.ascontiguousarray(X[(sel, columns)].astype('float32'))
