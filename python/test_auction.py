@@ -19,10 +19,15 @@ from lap_auction import dense_lap_auction, sparse_lap_auction
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--dim', type=int, default=1000)
-    parser.add_argument('--k', type=int, default=1000)
+    parser.add_argument('--k', type=int, default=None)
     parser.add_argument('--max-value', type=int, default=1000)
     parser.add_argument('--seed', type=int, default=123)
-    return parser.parse_args()
+    args = parser.parse_args()
+    
+    if args.k is None:
+        args.k = args.dim
+    
+    return args
 
 
 if __name__ == "__main__":

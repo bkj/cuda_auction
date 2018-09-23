@@ -127,6 +127,8 @@ int run_auction(
     
     for(int run_num = 0; run_num < num_runs; run_num++) {
         
+        cudaMemset(d_prices, 0.0, num_nodes * sizeof(float));
+        
         // Start timer
         cudaEvent_t start, stop;
         float milliseconds = 0;
@@ -184,6 +186,7 @@ int run_auction(
             
             auction_eps *= auction_factor;
         }
+        cudaThreadSynchronize();
         
         // Stop timer
         cudaEventRecord(stop, 0);

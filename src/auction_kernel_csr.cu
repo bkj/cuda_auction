@@ -52,8 +52,8 @@ __global__ void run_bidding(
             atomicMax(sbids + top1_col, 1);
 #else
             int idx = atomicAdd(sbids + top1_col, 1);
-            bids[num_nodes * top1_col + idx] = bid;
-            bidders[num_nodes * top1_col + idx] = i;
+            bids[num_nodes * idx + top1_col] = bid;
+            bidders[num_nodes * idx + top1_col] = i;
 #endif
         }
     }
@@ -90,15 +90,15 @@ __global__ void run_assignment(
 #else
         int num_bidders = sbids[j];
         if(num_bidders != 0) {
-            float high_bid  = bids[num_nodes * j];
-            int high_bidder = bidders[num_nodes * j];
+            float high_bid  = bids[j];
+            int high_bidder = bidders[j];
             
             float tmp_bid = -1.0;
             for(int idx = 1; idx < num_bidders; idx++){
-                tmp_bid = bids[num_nodes * j + idx];
+                tmp_bid = bids[num_nodes * idx + j];
                 if(tmp_bid > high_bid){
                     high_bid    = tmp_bid;
-                    high_bidder = bidders[num_nodes * j + idx];
+                    high_bidder = bidders[num_nodes * idx + j];
                 }
             }
 #endif
