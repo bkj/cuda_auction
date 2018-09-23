@@ -1,5 +1,18 @@
 __global__ void run_bidding(
-    const int num_nodes, float *data, int *person2item, float *bids, int *bidders, int *sbids, float *prices, float auction_eps){
+    const int num_nodes, 
+
+    float *data, 
+    int *offsets,
+    int *columns,
+
+    int *person2item, 
+    float *bids,
+    int *bidders,
+    int *sbids,
+    float *prices,
+    float auction_eps
+)
+{
     
     int i = blockDim.x * blockIdx.x + threadIdx.x; // person index
     if(i < num_nodes){
@@ -11,10 +24,10 @@ __global__ void run_bidding(
             float temp_ObjValue   = 0;
 
             fir_maxObj      = 0;
-            fir_maxObjValue = data[i] - prices[0];
+            fir_maxObjValue = data[i * num_nodes] - prices[0];
             
             for(int j = 1; j < num_nodes; j++){
-                temp_ObjValue = data[i + num_nodes * j] - prices[j];
+                temp_ObjValue = data[i * num_nodes + j] - prices[j];
                 if(temp_ObjValue > fir_maxObjValue){
                     sec_maxObjValue = fir_maxObjValue;
                     
@@ -24,9 +37,9 @@ __global__ void run_bidding(
                     sec_maxObjValue = temp_ObjValue;
                 }        
             }
-            
-            float bid = data[i + num_nodes * fir_maxObj] - sec_maxObjValue + auction_eps;
-            bids[i + num_nodes * fir_maxObj] = bid;
+
+            float bid = fir_maxObjValue - sec_maxObjValue + auction_eps;
+            bids[i * num_nodes + fir_maxObj] = bid;
             atomicMax(sbids + fir_maxObj, bid);
         }
     }
@@ -44,7 +57,7 @@ __global__ void run_assignment(
             
             float tmp_bid = -1;
             for(int i = 0; i < num_nodes; i++){        
-                tmp_bid = bids[i + num_nodes * j]; 
+                tmp_bid = bids[i * num_nodes + j]; 
                 if(tmp_bid > high_bid){
                     high_bid    = tmp_bid;
                     high_bidder = i;
@@ -58,7 +71,7 @@ __global__ void run_assignment(
                 atomicAdd(num_assigned, 1);                
             }
             
-            prices[j]                = high_bid;
+            prices[j]                += high_bid;
             person2item[high_bidder] = j;
             item2person[j]           = high_bidder;
         }
