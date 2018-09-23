@@ -55,10 +55,13 @@ if __name__ == "__main__":
     
     print('-' * 50, file=sys.stderr)
     t = time()
-    auc_ass = dense_lap_auction(X, verbose=True, auction_max_eps=1.0, auction_min_eps=1.0, auction_factor=0.0)
+    auc_ass = dense_lap_auction(X, num_runs=3,
+        verbose=True, auction_max_eps=1.0, auction_min_eps=1.0, auction_factor=0.0)
     dense_auction_time  = int(1000 * (time() - t))
+    # >>
     # dense_auction_score = int(X[(np.arange(X.shape[0]), auc_ass)].sum())
     dense_auction_score = int(X[(auc_ass, np.arange(X.shape[0]))].sum())
+    # <<
     
     print({
         "dense_auction_time"  : dense_auction_time,
