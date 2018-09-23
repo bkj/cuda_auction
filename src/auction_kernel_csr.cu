@@ -1,5 +1,5 @@
 #ifndef __AUCTION_VARS
-// #define DETERMINISTIC
+#define DETERMINISTIC
 #endif
 
 __global__ void run_bidding(
@@ -48,7 +48,7 @@ __global__ void run_bidding(
             
             float bid = top1_val - top2_val + auction_eps;
 #ifdef DETERMINISTIC
-            bids[i * num_nodes + top1_col] = bid;
+            bids[num_nodes * top1_col + i] = bid;
             atomicMax(sbids + top1_col, 1);
 #else
             int idx = atomicAdd(sbids + top1_col, 1);
@@ -81,7 +81,7 @@ __global__ void run_assignment(
             
             float tmp_bid = -1;
             for(int i = 0; i < num_nodes; i++){        
-                tmp_bid = bids[i * num_nodes + j]; 
+                tmp_bid = bids[num_nodes * j + i]; 
                 if(tmp_bid > high_bid){
                     high_bid    = tmp_bid;
                     high_bidder = i;

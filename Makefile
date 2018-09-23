@@ -8,8 +8,7 @@ ARCH=\
   -gencode arch=compute_60,code=compute_60 \
   -gencode arch=compute_60,code=sm_60
 
-# OPTIONS=-O3 -use_fast_math
-OPTIONS=
+OPTIONS=-O3 -use_fast_math
 
 all: main shared
 	
