@@ -25,8 +25,8 @@
 #define MAX_NODES       20000 // Dimension of problem
 #define BLOCKSIZE       32 // How best to set this?
 #define AUCTION_MAX_EPS 1.0 // Larger values mean solution is more approximate
-#define AUCTION_MIN_EPS 1.0
-#define AUCTION_FACTOR  0.0
+#define AUCTION_MIN_EPS 0.25
+#define AUCTION_FACTOR  0.5
 #define NUM_RUNS        1
 
 // Uncomment to run dense version
@@ -182,7 +182,7 @@ int run_auction(
                 // std::cerr << "h_numAssign=" << h_numAssign << std::endl;
             }
             
-            // std::cerr << "counter=" << counter << std::endl;
+            std::cerr << "counter=" << counter << std::endl;
             
             auction_eps *= auction_factor;
         }

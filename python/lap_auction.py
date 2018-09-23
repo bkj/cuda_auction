@@ -84,7 +84,8 @@ def sparse_lap_auction(X, k, verbose=False, num_runs=1,
     
     offsets = np.hstack([k * np.arange(num_nodes + 1)]).astype('int32')
     
-    columns = np.argsort(-X, axis=-1)[:,:k] # could just `argpartition`
+    columns = np.argpartition(X, -k)[:,-k:][:,::-1]
+    # columns = np.argsort(-X, axis=-1)[:,:k] # could just `argpartition`
     columns = np.hstack(columns).astype('int32')
     
     assert len(set(columns)) == num_nodes
