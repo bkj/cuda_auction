@@ -10,15 +10,19 @@ ARCH=\
 
 OPTIONS=-O3 -use_fast_math
 
-all: main shared
+all: main shared cpu
 	
-main: src/auction.cu src/auction_kernel_dense.cu src/auction_kernel_csr.cu
+main: src/auction.cu src/auction_kernel_dense.cu src/auction_kernel_csr.cu src/topdot.cpp
 	mkdir -p bin
-	nvcc $(ARCH) $(OPTIONS) -o bin/auction src/auction.cu -I src
+	nvcc $(ARCH) $(OPTIONS) -o bin/auction src/auction.cu -I src -l curand
 
-shared: src/auction.cu src/auction_kernel_dense.cu src/auction_kernel_csr.cu
+cpu: src/auction_cpu.cpp src/topdot.cpp
+	mkdir -p bin
+	g++ $(OPTIONS) -std=c++11 -lstdc++ -o bin/auction_cpu src/auction_cpu.cpp -I src
+
+shared: src/auction.cu src/auction_kernel_dense.cu src/auction_kernel_csr.cu src/topdot.cpp
 	mkdir -p lib
-	nvcc $(ARCH) $(OPTIONS) -Xcompiler -fPIC -shared -o lib/cuda_auction.so src/auction.cu -I src
+	nvcc $(ARCH) $(OPTIONS) -Xcompiler -fPIC -shared -o lib/cuda_auction.so src/auction.cu -I src -l curand
 	
 clean:
 	rm -rf bin lib
