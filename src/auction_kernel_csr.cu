@@ -15,7 +15,9 @@ __global__ void run_bidding(
     int *bidders,
     int *sbids,
     float *prices,
-    float auction_eps
+    float auction_eps,
+
+    float *rand
 )
 {
     int i = blockDim.x * blockIdx.x + threadIdx.x; // person index
@@ -35,10 +37,15 @@ __global__ void run_bidding(
             // Find best zero bid
             for(int col = 0; col < num_nodes; col++) {
                 tmp_val = -prices[col];
-                if(tmp_val > top1_val) {
-                    top2_val = top1_val;
-                    top1_col = col;
-                    top1_val = tmp_val;
+                if(tmp_val >= top1_val) {
+                    if(
+                        (tmp_val > top1_val) ||
+                        (rand[i * num_nodes + col] >= rand[i * num_nodes + top1_col])
+                    ) {
+                        top2_val = top1_val;
+                        top1_col = col;
+                        top1_val = tmp_val;
+                    }
                 } else if(tmp_val > top2_val) {
                     top2_val = tmp_val;
                 }
@@ -47,11 +54,15 @@ __global__ void run_bidding(
             // Check all nonzero entries first
             for(int idx = start_idx; idx < end_idx; idx++){
                 col = columns[idx];
+                if(col == EMPTY_COL) {break;}
                 tmp_val = data[idx] - prices[col];
 
                 if(tmp_val >= top1_val) {
                     // If lots of entries have the same value, it's important to break ties
-                    if(tmp_val > top1_val) || (rand[i * num_nodes + col] >= rand[i * num_nodes + top1_col])) {
+                    if(
+                        (tmp_val > top1_val) ||
+                        (rand[i * num_nodes + col] >= rand[i * num_nodes + top1_col])
+                    ) {
                         top2_val = top1_val;
                         top1_col = col;
                         top1_val = tmp_val;
