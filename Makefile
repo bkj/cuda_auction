@@ -14,7 +14,7 @@ all: main shared cpu
 	
 main: src/auction.cu src/auction_kernel_dense.cu src/auction_kernel_csr.cu src/topdot.cpp
 	mkdir -p bin
-	nvcc $(ARCH) $(OPTIONS) -o bin/auction src/auction.cu -I src -l curand
+	nvcc $(ARCH) $(OPTIONS) --std=c++11 -o bin/auction src/auction.cu -I src -l curand
 
 cpu: src/auction_cpu.cpp src/topdot.cpp
 	mkdir -p bin
@@ -22,7 +22,7 @@ cpu: src/auction_cpu.cpp src/topdot.cpp
 
 shared: src/auction.cu src/auction_kernel_dense.cu src/auction_kernel_csr.cu src/topdot.cpp
 	mkdir -p lib
-	nvcc $(ARCH) $(OPTIONS) -Xcompiler -fPIC -shared -o lib/cuda_auction.so src/auction.cu -I src -l curand
+	nvcc $(ARCH) $(OPTIONS) --std=c++11 -Xcompiler -fPIC -shared -o lib/cuda_auction.so src/auction.cu -I src -l curand
 	
 clean:
 	rm -rf bin lib

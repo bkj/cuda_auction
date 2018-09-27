@@ -12,6 +12,7 @@
 #include <iostream>
 #include <string>
 #include <fstream>
+#include <chrono>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -236,15 +237,68 @@ int run_auction(
     return 0;
 } // end run_auction
 
+int run_auction_python(
+    int    num_nodes,
+    int    num_edges,
+
+    float* h_data,      // data
+    int*   h_offsets,   // offsets for items
+    int*   h_columns,
+
+    int*   h_person2item, // results
+
+    float auction_max_eps,
+    float auction_min_eps,
+    float auction_factor,
+
+    int num_runs,
+    int verbose
+) {
+
+    cudaEvent_t auction_start, auction_stop;
+    float milliseconds = 0;
+    cudaEventCreate(&auction_start);
+    cudaEventCreate(&auction_stop);
+    cudaEventRecord(auction_start, 0);
+
+    run_auction(
+        num_nodes,
+        num_edges,
+
+        h_data,      // data
+        h_offsets,   // offsets for items
+        h_columns,
+
+        h_person2item, // results
+
+        auction_max_eps,
+        auction_min_eps,
+        auction_factor,
+
+        num_runs,
+        0
+    );
+    cudaEventRecord(auction_stop, 0);
+    cudaEventSynchronize(auction_stop);
+    cudaEventElapsedTime(&milliseconds, auction_start, auction_stop);
+    cudaEventDestroy(auction_start);
+    cudaEventDestroy(auction_stop);
+    if(verbose > 0) {
+        std::cerr << "run_auction     " << milliseconds << std::endl;
+    }
+    return 0;
+}
 
 int dot_auction(
         int num_nodes,
         int *Ap, int *Aj, double *Ax,
         int *Bp, int *Bj, double *Bx,
         int k,
-        int *h_person2item
+        int *h_person2item,
+        int verbose
 ) {
-    int verbose = 0;
+
+    std::chrono::high_resolution_clock::time_point topdot_start = std::chrono::high_resolution_clock::now();
 
     int* h_columns   = (int *)malloc(sizeof(int) * num_nodes * k);
     double* h_data_d = (double *)malloc(sizeof(double) * num_nodes * k);
@@ -258,7 +312,7 @@ int dot_auction(
 
     for(int i = 0; i < num_nodes * k; i++) {
         h_data[i] = (float)h_data_d[i];
-        if(verbose) {
+        if(verbose > 1) {
             std::cerr << h_columns[i] << ":" << h_data[i] << " ";
             if((i + 1) % k == 0) {
                 std::cerr << std::endl;
@@ -266,6 +320,24 @@ int dot_auction(
         }
     }
     free(h_data_d);
+
+        // Stop timer
+    std::chrono::high_resolution_clock::time_point topdot_stop = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> time_span =
+        std::chrono::duration_cast<std::chrono::duration<double>>(topdot_stop - topdot_start);
+
+    if(verbose > 0) {
+        std::cerr << "topdot          " << 1000 * time_span.count() << std::endl;
+    }
+
+    // --
+    // Auction algorithm
+
+    cudaEvent_t auction_start, auction_stop;
+    float milliseconds = 0;
+    cudaEventCreate(&auction_start);
+    cudaEventCreate(&auction_stop);
+    cudaEventRecord(auction_start, 0);
 
     run_auction(
         (int)num_nodes,
@@ -281,9 +353,18 @@ int dot_auction(
         (float)1.0,
         (float)0.0,
 
-        (int)1,
-        (int)1
+        (int)1, // 1 run
+        (int)0  // not verbose
     );
+
+    cudaEventRecord(auction_stop, 0);
+    cudaEventSynchronize(auction_stop);
+    cudaEventElapsedTime(&milliseconds, auction_start, auction_stop);
+    cudaEventDestroy(auction_start);
+    cudaEventDestroy(auction_stop);
+    if(verbose > 0) {
+        std::cerr << "run_auction     " << milliseconds << std::endl;
+    }
 
     free(h_columns);
     free(h_data);

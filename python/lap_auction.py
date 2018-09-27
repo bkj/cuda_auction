@@ -12,7 +12,7 @@ from ctypes import c_float, c_double, c_int, POINTER
 
 def __get_run_auction(so_path='/home/bjohnson/projects/cuda_auction/lib/cuda_auction.so'):
     dll = ctypes.CDLL(so_path, mode=ctypes.RTLD_GLOBAL)
-    fn = dll.run_auction
+    fn = dll.run_auction_python
     fn.argtypes = [
         c_int,
         c_int,
@@ -50,6 +50,8 @@ def __get_dot_auction(so_path='/home/bjohnson/projects/cuda_auction/lib/cuda_auc
         c_int,
         
         POINTER(c_int),
+        
+        c_int,
     ]
     
     return fn
@@ -57,7 +59,9 @@ def __get_dot_auction(so_path='/home/bjohnson/projects/cuda_auction/lib/cuda_auc
 __run_auction = __get_run_auction()
 __dot_auction = __get_dot_auction()
 
-def dot_auction(A, B, k):
+# =============================================================
+
+def dot_auction(A, B, k, verbose=True):
     assert A.shape[0] == B.shape[0]
     assert A.shape[1] == B.shape[1]
     
@@ -97,6 +101,8 @@ def dot_auction(A, B, k):
         int(k),
         
         person2item_p,
+        
+        int(verbose)
     )
     return person2item
 
