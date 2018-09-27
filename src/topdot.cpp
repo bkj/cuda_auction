@@ -93,10 +93,6 @@ void _topdot(
             head = next[head];
         }
 
-        // Get top-k
-        // >>
-        // This makes a big difference! Whether ordered randomly
-        // or sorted.  Why? Memory collisions?
         if (num_candidates > k){
             std::nth_element(
                 candidates.begin(),
@@ -105,22 +101,6 @@ void _topdot(
                 candidate_cmp
             );
         }
-        // --
-        // if (num_candidates > k){
-        //     std::partial_sort(
-        //         candidates.begin(),
-        //         candidates.begin() + k,
-        //         candidates.end(),
-        //         candidate_cmp
-        //     );
-        // } else {
-        //     std::sort(
-        //         candidates.begin(),
-        //         candidates.end(),
-        //         candidate_cmp
-        //     );
-        // }
-        // <<
 
         for(int entry_idx = 0; entry_idx < k; entry_idx++){
             if(entry_idx < num_candidates) {

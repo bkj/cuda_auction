@@ -5,6 +5,7 @@
 """
 
 import numpy as np
+from time import time
 
 import ctypes
 from ctypes import c_float, c_double, c_int, POINTER
@@ -199,6 +200,7 @@ def sparse_lap_auction(X, k, verbose=False, num_runs=1,
 def csr_lap_auction(X, verbose=False, num_runs=1, 
     auction_max_eps=1.0, auction_min_eps=1.0, auction_factor=0.0):
     
+    t = time()
     num_nodes = int(X.shape[0])
     num_edges = X.nnz
     
@@ -217,7 +219,6 @@ def csr_lap_auction(X, verbose=False, num_runs=1,
     offsets_p     = offsets.ctypes.data_as(POINTER(c_int))
     columns_p     = columns.ctypes.data_as(POINTER(c_int))
     person2item_p = person2item.ctypes.data_as(POINTER(c_int))
-    
     __run_auction(
         num_nodes,
         num_edges,

@@ -194,8 +194,9 @@ int run_auction(
                 cudaMemcpy(&h_numAssign, d_numAssign, sizeof(int) * 1, cudaMemcpyDeviceToHost);
                 // std::cerr << "h_numAssign=" << h_numAssign << std::endl;
             }
-
-            std::cerr << "counter=" << counter << std::endl;
+            if(verbose) {
+                std::cerr << "counter=" << counter << std::endl;
+            }
 
             auction_eps *= auction_factor;
         }
@@ -221,11 +222,16 @@ int run_auction(
     cudaMemcpy(h_person2item, d_person2item, sizeof(int) * num_nodes, cudaMemcpyDeviceToHost);
 
     cudaFree(d_data);
-    cudaFree(d_bids);
-    cudaFree(d_prices);
+    cudaFree(d_columns);
+    cudaFree(d_offsets);
     cudaFree(d_person2item);
     cudaFree(d_item2person);
+    cudaFree(d_bids);
+    cudaFree(d_prices);
+    cudaFree(d_bidders);
+    cudaFree(d_sbids);
     cudaFree(d_numAssign);
+    cudaFree(d_rand);
 
     return 0;
 } // end run_auction
@@ -238,7 +244,7 @@ int dot_auction(
         int k,
         int *h_person2item
 ) {
-    int verbose = 1;
+    int verbose = 0;
 
     int* h_columns   = (int *)malloc(sizeof(int) * num_nodes * k);
     double* h_data_d = (double *)malloc(sizeof(double) * num_nodes * k);
