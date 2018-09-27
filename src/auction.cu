@@ -12,7 +12,7 @@
 #include <iostream>
 #include <string>
 #include <fstream>
-#include <chrono>
+// #include <chrono>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -298,7 +298,7 @@ int dot_auction(
         int verbose
 ) {
 
-    std::chrono::high_resolution_clock::time_point topdot_start = std::chrono::high_resolution_clock::now();
+    // std::chrono::high_resolution_clock::time_point topdot_start = std::chrono::high_resolution_clock::now();
 
     int* h_columns   = (int *)malloc(sizeof(int) * num_nodes * k);
     double* h_data_d = (double *)malloc(sizeof(double) * num_nodes * k);
@@ -321,14 +321,14 @@ int dot_auction(
     }
     free(h_data_d);
 
-        // Stop timer
-    std::chrono::high_resolution_clock::time_point topdot_stop = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> time_span =
-        std::chrono::duration_cast<std::chrono::duration<double>>(topdot_stop - topdot_start);
+    //     // Stop timer
+    // std::chrono::high_resolution_clock::time_point topdot_stop = std::chrono::high_resolution_clock::now();
+    // std::chrono::duration<double> time_span =
+    //     std::chrono::duration_cast<std::chrono::duration<double>>(topdot_stop - topdot_start);
 
-    if(verbose > 0) {
-        std::cerr << "topdot          " << 1000 * time_span.count() << std::endl;
-    }
+    // if(verbose > 0) {
+    //     std::cerr << "topdot          " << 1000 * time_span.count() << std::endl;
+    // }
 
     // --
     // Auction algorithm
