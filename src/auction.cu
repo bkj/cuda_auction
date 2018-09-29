@@ -27,7 +27,6 @@
 #ifndef __RUN_VARS
 #define __RUN_VARS
 #define MAX_NODES       20000 // Dimension of problem
-#define BLOCKSIZE       32 // How best to set this?
 #define AUCTION_MAX_EPS 1.0 // Larger values mean solution is more approximate
 #define AUCTION_MIN_EPS 1.0
 #define AUCTION_FACTOR  0.0
@@ -86,9 +85,8 @@ int run_auction(
     // --
     // CUDA options
 
-    dim3 dimBlock(BLOCKSIZE, 1, 1);
-    int gx = ceil(num_nodes / (double) dimBlock.x);
-    dim3 dimGrid(gx, 1, 1);
+    dim3 threadsPerBlock(512, 1, 1);
+    dim3 blocksPerGrid(ceil(num_nodes / (double) threadsPerBlock.x), 1, 1);
 
     // --
     // Declare variables
@@ -165,7 +163,7 @@ int run_auction(
                 cudaMemset(d_sbids, 0, num_nodes * sizeof(int));
                 cudaThreadSynchronize();
 
-                run_bidding<<<dimBlock, dimGrid>>>(
+                run_bidding<<<blocksPerGrid, threadsPerBlock>>>(
                     num_nodes,
 
                     d_data,
@@ -180,7 +178,7 @@ int run_auction(
                     auction_eps,
                     d_rand
                 );
-                run_assignment<<<dimBlock, dimGrid>>>(
+                run_assignment<<<blocksPerGrid, threadsPerBlock>>>(
                     num_nodes,
                     d_person2item,
                     d_item2person,
