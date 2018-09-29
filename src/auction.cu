@@ -1,10 +1,4 @@
 // auction.cu
-//
-// !! For best performance, I think the datalayout
-// needs to be transposed.  Eg:
-//      i + num_nodes * j
-// instead of the current
-//      i * num_nodes + j
 
 #ifndef MAIN_AUCTION
 #define MAIN_AUCTION
