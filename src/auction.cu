@@ -195,9 +195,9 @@ int run_auction(
                 cudaMemcpy(&h_numAssign, d_numAssign, sizeof(int) * 1, cudaMemcpyDeviceToHost);
                 // std::cerr << "h_numAssign=" << h_numAssign << std::endl;
             }
-            if(verbose) {
-                std::cerr << "counter=" << counter << std::endl;
-            }
+            // if(verbose) {
+            std::cerr << "counter=" << counter << std::endl;
+            // }
 
             auction_eps *= auction_factor;
         }
@@ -261,6 +261,11 @@ int run_auction_python(
     cudaEventCreate(&auction_stop);
     cudaEventRecord(auction_start, 0);
 
+    // for(int i = 0; i < 20; i++) {
+    //     std::cerr << "h_columns[" << i << "]=" << h_columns[i] << std::endl;
+    //     std::cerr << "   h_data[" << i << "]=" << h_data[i] << std::endl;
+    // }
+
     run_auction(
         num_nodes,
         num_edges,
@@ -276,16 +281,16 @@ int run_auction_python(
         auction_factor,
 
         num_runs,
-        0
+        1
     );
     cudaEventRecord(auction_stop, 0);
     cudaEventSynchronize(auction_stop);
     cudaEventElapsedTime(&milliseconds, auction_start, auction_stop);
     cudaEventDestroy(auction_start);
     cudaEventDestroy(auction_stop);
-    if(verbose > 0) {
-        std::cerr << "run_auction     " << milliseconds << std::endl;
-    }
+    // if(verbose > 0) {
+    //     std::cerr << "run_auction     " << milliseconds << std::endl;
+    // }
     return 0;
 }
 

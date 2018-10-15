@@ -210,6 +210,10 @@ def csr_lap_auction(X, verbose=False, num_runs=1,
     num_nodes = int(X.shape[0])
     num_edges = X.nnz
     
+    # >>
+    X.sort_indices()
+    # <<
+    
     data    = X.data.astype('float32')
     offsets = X.indptr.astype('int32')
     columns = X.indices.astype('int32')
@@ -240,6 +244,6 @@ def csr_lap_auction(X, verbose=False, num_runs=1,
         float(auction_factor),
         
         int(num_runs),
-        int(verbose)
+        int(10)
     )
     return person2item

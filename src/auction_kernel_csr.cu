@@ -39,8 +39,8 @@ __global__ void run_bidding(
                 tmp_val = -prices[col];
                 if(tmp_val >= top1_val) {
                     if(
-                        (tmp_val > top1_val) ||
-                        (rand[i * num_nodes + col] >= rand[i * num_nodes + top1_col])
+                        (tmp_val > top1_val)// ||
+                        // (rand[i * num_nodes + col] >= rand[i * num_nodes + top1_col])
                     ) {
                         top2_val = top1_val;
                         top1_col = col;
@@ -60,8 +60,8 @@ __global__ void run_bidding(
                 if(tmp_val >= top1_val) {
                     // If lots of entries have the same value, it's important to break ties
                     if(
-                        (tmp_val > top1_val) ||
-                        (rand[i * num_nodes + col] >= rand[i * num_nodes + top1_col])
+                        (tmp_val > top1_val)// ||
+                        // (rand[i * num_nodes + col] >= rand[i * num_nodes + top1_col])
                     ) {
                         top2_val = top1_val;
                         top1_col = col;
