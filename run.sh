@@ -2,7 +2,7 @@
 
 # run.sh
 
-python utils/make-data.py > graph
+# python utils/make-data.py --dim 1024 > graph
 
 make -s clean; make -s
-./bin/auction > res
+nvprof ./bin/auction > res

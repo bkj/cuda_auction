@@ -18,7 +18,7 @@ from scipy import sparse
 from lap import lapjv
 
 from lap_auction import dot_auction
-from lap_auction import sparse_lap_auction, dense_lap_auction
+from lap_auction import dense_lap_auction, csr_lap_auction
 
 
 # --
@@ -47,27 +47,23 @@ if __name__ == "__main__":
     # Generate data
     
     t = time()
-    A = sparse.rand(args.dim, args.dim, density=args.density, format='csr')
-    B = sparse.rand(args.dim, args.dim, density=args.density, format='csr')
-    A.eliminate_zeros()
-    B.eliminate_zeros()
-    
+    X = sparse.rand(args.dim, args.dim, density=args.density, format='csr')
+    X.eliminate_zeros()
+    X = X.tocsr()
     gen_time = time() - t
     print('gen_time  ', gen_time, file=sys.stderr)
     
-    # X = np.asarray(A.dot(B).todense())
-    # print(np.sort(X, axis=-1)[:,::-1])
+    np.savetxt('.indptr', X.indptr, fmt='%d')
+    np.savetxt('.indices', X.indices, fmt='%d')
+    np.savetxt('.data', X.data, fmt='%f')
     
     # --
     # Run JV algorithm
     
     print('-' * 50, file=sys.stderr)
     t = time()
-    X = np.asarray(A.dot(B).todense())
-    
-    print(X.sum(axis=-1))
-    
-    _, src_ass, _ =  lapjv((X.max() - X))
+    Xd = np.asarray(X.todense())
+    _, src_ass, _ =  lapjv((Xd.max() - Xd))
     jv_time  = int(1000 * (time() - t))
     assigned = X[(np.arange(X.shape[0]), src_ass)]
     jv_worst = (X >= assigned.reshape(-1, 1)).sum(axis=1).max()
@@ -81,29 +77,12 @@ if __name__ == "__main__":
     
     assert args.k >= jv_worst, "args.k too small"
     
-    # # --
-    # # Run dense GPU auction
-    
-    # print('-' * 50, file=sys.stderr)
-    # t = time()
-    # X = np.asarray(A.dot(B).todense())
-    # auc_ass = dense_lap_auction(X, 
-    #     verbose=True, num_runs=3,
-    #     auction_max_eps=1.0, auction_min_eps=1.0, auction_factor=0.0)
-    # dense_auction_time  = int(1000 * (time() - t))
-    # dense_auction_score = int(X[(np.arange(X.shape[0]), auc_ass)].sum())
-    
-    # print({
-    #     "dense_auction_time"  : dense_auction_time,
-    #     "dense_auction_score" : dense_auction_score,
-    # }, file=sys.stderr)
-    
     # --
-    # Run sparse GPU auction
+    # Run CSR GPU auction
     
     print('-' * 50, file=sys.stderr)
     t = time()
-    auc_ass = sparse_lap_auction(X, k=args.k,
+    auc_ass = csr_lap_auction(X,
         verbose=True, num_runs=3,
         auction_max_eps=1.0, auction_min_eps=1.0, auction_factor=0.0)
     sparse_auction_time  = int(1000 * (time() - t))
@@ -115,15 +94,3 @@ if __name__ == "__main__":
         "sparse_auction_score" : sparse_auction_score,
     }, file=sys.stderr)
     
-    # # --
-    # # Run auction algorithm
-    
-    # t = time()
-    # auc_ass = dot_auction(A, B, args.k)
-    # dot_auction_time  = int(1000 * (time() - t))
-    # dot_auction_score = int(X[(np.arange(X.shape[0]), auc_ass)].sum())
-    
-    # print({
-    #     "dot_auction_time"  : dot_auction_time,
-    #     "dot_auction_score" : dot_auction_score,
-    # }, file=sys.stderr)

@@ -8,18 +8,17 @@ ARCH=\
   -gencode arch=compute_60,code=compute_60 \
   -gencode arch=compute_60,code=sm_60
 
-
 OPTIONS=-O3 -use_fast_math -Xcompiler -fopenmp -lcurand -Xcompiler -Wall
 
-all: main shared cpu
+all: main shared
 	
 main: src/auction.cu src/auction_kernel_dense.cu src/auction_kernel_csr.cu src/topdot.cpp
 	mkdir -p bin
-	nvcc $(ARCH) $(OPTIONS) -o bin/auction src/auction.cu -I src
+	nvcc -w $(ARCH) $(OPTIONS) -o bin/auction src/auction.cu -I src
 
-cpu: src/auction_cpu.cpp src/topdot.cpp
-	mkdir -p bin
-	g++ -O3 -use_fast_math -std=c++11 -lstdc++ -o bin/auction_cpu src/auction_cpu.cpp -I src
+# cpu: src/auction_cpu.cpp src/topdot.cpp
+# 	mkdir -p bin
+# 	g++ -O3 -use_fast_math -std=c++11 -lstdc++ -o bin/auction_cpu src/auction_cpu.cpp -I src
 
 shared: src/auction.cu src/auction_kernel_dense.cu src/auction_kernel_csr.cu src/topdot.cpp
 	mkdir -p lib
