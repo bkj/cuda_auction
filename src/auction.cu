@@ -70,7 +70,7 @@ struct BiddingOp {
 
         if(
             (a_val > b_val) ||
-            ((a.best_val == b.best_val) && (a.idx < b.idx))
+            ((a.best_val == b.best_val) && (a.idx < b.idx)) // Should (actually) break ties randomly
         ) {
             best_row      = a.row;
             best_idx      = a.idx;
@@ -252,80 +252,80 @@ int run_auction(
                 cudaMemset(d_bids,  0, num_nodes * num_nodes * sizeof(float));
                 cudaMemset(d_sbids, 0, num_nodes * sizeof(int));
 
-                // ----------------------------------
-                // Find unassigned rows
+                // // ----------------------------------
+                // // Find unassigned rows
 
-                void     *d_temp_storage = NULL;
-                size_t   temp_storage_bytes = 0;
+                // void     *d_temp_storage = NULL;
+                // size_t   temp_storage_bytes = 0;
 
-                __setFlags<<<node_blocks, THREADS>>>(d_flags, d_person2item, num_nodes);
+                // __setFlags<<<node_blocks, THREADS>>>(d_flags, d_person2item, num_nodes);
 
-                cub::DeviceSelect::Flagged(d_temp_storage, temp_storage_bytes, d_offsets, d_flags, d_unassigned_offsets_start,
-                    d_num_unassigned, num_nodes);
-                cudaMalloc(&d_temp_storage, temp_storage_bytes);
-                cub::DeviceSelect::Flagged(d_temp_storage, temp_storage_bytes, d_offsets, d_flags, d_unassigned_offsets_start,
-                    d_num_unassigned, num_nodes);
+                // cub::DeviceSelect::Flagged(d_temp_storage, temp_storage_bytes, d_offsets, d_flags, d_unassigned_offsets_start,
+                //     d_num_unassigned, num_nodes);
+                // cudaMalloc(&d_temp_storage, temp_storage_bytes);
+                // cub::DeviceSelect::Flagged(d_temp_storage, temp_storage_bytes, d_offsets, d_flags, d_unassigned_offsets_start,
+                //     d_num_unassigned, num_nodes);
 
-                cub::DeviceSelect::Flagged(d_temp_storage, temp_storage_bytes, d_offsets + 1, d_flags, d_unassigned_offsets_end,
-                    d_num_unassigned, num_nodes);
-                cudaMalloc(&d_temp_storage, temp_storage_bytes);
-                cub::DeviceSelect::Flagged(d_temp_storage, temp_storage_bytes, d_offsets + 1, d_flags, d_unassigned_offsets_end,
-                    d_num_unassigned, num_nodes);
+                // cub::DeviceSelect::Flagged(d_temp_storage, temp_storage_bytes, d_offsets + 1, d_flags, d_unassigned_offsets_end,
+                //     d_num_unassigned, num_nodes);
+                // cudaMalloc(&d_temp_storage, temp_storage_bytes);
+                // cub::DeviceSelect::Flagged(d_temp_storage, temp_storage_bytes, d_offsets + 1, d_flags, d_unassigned_offsets_end,
+                //     d_num_unassigned, num_nodes);
 
-                int* h_num_unassigned = (int*)malloc(1 * sizeof(int));
-                cudaMemcpy(h_num_unassigned, d_num_unassigned, 1 * sizeof(int), cudaMemcpyDeviceToHost);
-                // std::cerr << "h_num_unassigned=" << h_num_unassigned[0] << std::endl;
-                // int* h_unassigned_offsets = (int*)malloc(h_num_selected_out[0] * sizeof(int));
-                // cudaMemcpy(h_unassigned_offsets, d_unassigned_offsets, h_num_selected_out[0] * sizeof(int), cudaMemcpyDeviceToHost);
-                // for(int i = 0; i < 10; i++)
-                    // std::cerr << h_unassigned_offsets[i] << std::endl;
+                // int* h_num_unassigned = (int*)malloc(1 * sizeof(int));
+                // cudaMemcpy(h_num_unassigned, d_num_unassigned, 1 * sizeof(int), cudaMemcpyDeviceToHost);
+                // // std::cerr << "h_num_unassigned=" << h_num_unassigned[0] << std::endl;
+                // // int* h_unassigned_offsets = (int*)malloc(h_num_selected_out[0] * sizeof(int));
+                // // cudaMemcpy(h_unassigned_offsets, d_unassigned_offsets, h_num_selected_out[0] * sizeof(int), cudaMemcpyDeviceToHost);
+                // // for(int i = 0; i < 10; i++)
+                //     // std::cerr << h_unassigned_offsets[i] << std::endl;
 
-                // ----------------------------------
-                // Run bidding op on unassigned rows
+                // // ----------------------------------
+                // // Run bidding op on unassigned rows
 
-                d_temp_storage = NULL; temp_storage_bytes = 0;
-                BiddingOp bidding_op(d_prices);
-                Entry null_bid = {-1, -1, BIG_NEGATIVE, BIG_NEGATIVE, BIG_NEGATIVE};
-                Entry* d_entry_bid;
-                cudaMalloc((void**)&d_entry_bid, h_num_unassigned[0] * sizeof(Entry));
-                cub::DeviceSegmentedReduce::Reduce(d_temp_storage, temp_storage_bytes, d_entry_array, d_entry_bid,
-                    h_num_unassigned[0], d_unassigned_offsets_start, d_unassigned_offsets_end, bidding_op, null_bid);
-                cudaMalloc(&d_temp_storage, temp_storage_bytes);
-                cub::DeviceSegmentedReduce::Reduce(d_temp_storage, temp_storage_bytes, d_entry_array, d_entry_bid,
-                    h_num_unassigned[0], d_unassigned_offsets_start, d_unassigned_offsets_end, bidding_op, null_bid);
+                // d_temp_storage = NULL; temp_storage_bytes = 0;
+                // BiddingOp bidding_op(d_prices);
+                // Entry null_bid = {-1, -1, BIG_NEGATIVE, BIG_NEGATIVE, BIG_NEGATIVE};
+                // Entry* d_entry_bid;
+                // cudaMalloc((void**)&d_entry_bid, h_num_unassigned[0] * sizeof(Entry));
+                // cub::DeviceSegmentedReduce::Reduce(d_temp_storage, temp_storage_bytes, d_entry_array, d_entry_bid,
+                //     h_num_unassigned[0], d_unassigned_offsets_start, d_unassigned_offsets_end, bidding_op, null_bid);
+                // cudaMalloc(&d_temp_storage, temp_storage_bytes);
+                // cub::DeviceSegmentedReduce::Reduce(d_temp_storage, temp_storage_bytes, d_entry_array, d_entry_bid,
+                //     h_num_unassigned[0], d_unassigned_offsets_start, d_unassigned_offsets_end, bidding_op, null_bid);
 
-                // Entry* h_entry_bid = (Entry*)malloc(h_num_unassigned[0] * sizeof(Entry));
-                // cudaMemcpy(h_entry_bid, d_entry_bid, h_num_unassigned[0] * sizeof(Entry), cudaMemcpyDeviceToHost);
-                // for(int i = 0; i < min(h_num_unassigned[0], 10); i++) {
-                //     Entry tmp = h_entry_bid[i];
-                //     std::cerr << tmp.row << " " << tmp.idx << " " << tmp.best_val << " " << tmp.next_best_val << std::endl;
-                // }
+                // // Entry* h_entry_bid = (Entry*)malloc(h_num_unassigned[0] * sizeof(Entry));
+                // // cudaMemcpy(h_entry_bid, d_entry_bid, h_num_unassigned[0] * sizeof(Entry), cudaMemcpyDeviceToHost);
+                // // for(int i = 0; i < min(h_num_unassigned[0], 10); i++) {
+                // //     Entry tmp = h_entry_bid[i];
+                // //     std::cerr << tmp.row << " " << tmp.idx << " " << tmp.best_val << " " << tmp.next_best_val << std::endl;
+                // // }
 
-                // ----------------------------------
-                // Broadcast bids to d_bids
+                // // ----------------------------------
+                // // Broadcast bids to d_bids
 
-                int tmp_blocks = 1 + h_num_unassigned[0] / THREADS;
-                __scatterBids<<<tmp_blocks, THREADS>>>(d_bids, d_sbids, d_entry_bid, num_nodes, h_num_unassigned[0], auction_eps);
+                // int tmp_blocks = 1 + h_num_unassigned[0] / THREADS;
+                // __scatterBids<<<tmp_blocks, THREADS>>>(d_bids, d_sbids, d_entry_bid, num_nodes, h_num_unassigned[0], auction_eps);
 
                 // cudaMemset(d_bids,  0, num_nodes * num_nodes * sizeof(float));
                 // cudaMemset(d_sbids, 0, num_nodes * sizeof(int));
-                // run_bidding<<<blocksPerGrid, threadsPerBlock>>>(
-                //     num_nodes,
+                run_bidding<<<blocksPerGrid, threadsPerBlock>>>(
+                    num_nodes,
 
-                //     d_data,
-                //     d_offsets,
-                //     d_columns,
+                    d_data,
+                    d_offsets,
+                    d_columns,
 
-                //     // d_entry_array,
+                    // d_entry_array,
 
-                //     d_person2item,
-                //     d_bids,
-                //     d_bidders,
-                //     d_sbids,
-                //     d_prices,
-                //     auction_eps,
-                //     d_rand
-                // );
+                    d_person2item,
+                    d_bids,
+                    d_bidders,
+                    d_sbids,
+                    d_prices,
+                    auction_eps,
+                    d_rand
+                );
 
                 run_assignment<<<blocksPerGrid, threadsPerBlock>>>(
                     num_nodes,
